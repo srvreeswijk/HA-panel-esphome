@@ -1,0 +1,1725 @@
+substitutions:
+  lightbulb: "\U000F1802"
+  boiler_on: "\U000F0238"
+  boiler_off: "\U000F1722"
+  radiator: "\U000F0438"
+  ceiling_light: "\U000F0769"
+  house_temp: "\U000F0F55"
+  door_open: "\U000F081C"
+  door_lock: "\U000F139B"
+  thermometer: "\U000F050F"
+  nightbulb: "\U000F1A4D"
+  arm_alarm: "\U000F068A"
+  disarm_alarm: "\U000F099E"
+  stairs: "\U000F04CD"
+  light_recessed: "\U000F179B"
+  #weather icons
+  cloudy: "\U000F0590"
+  cloudyalert: "\U000F0F2F"
+  cloudyarrowright: "\U000F0E6E"
+  fog: "\U000F0591"
+  hail: "\U000F0592"
+  hazy: "\U000F0F30"
+  hurricane: "\U000F0898"
+  lightning: "\U000F0593"
+  lightningrainy: "\U000F067E"
+  night: "\U000F0594"
+  nightpartlycloudy: "\U000F0F31"
+  partlycloudy: "\U000F0595"
+  partlylightning: "\U000F0F32"
+  partlyrainy: "\U000F0F33"
+  partlysnowy: "\U000F0F34"
+  partlysnowyrainy: "\U000F0F35"
+  pouring: "\U000F0596"
+  rainy: "\U000F0597"
+  snowy: "\U000F0598"
+  snowyheavy: "\U000F0F36"
+  snowyrainy: "\U000F067F"
+  sunny: "\U000F0599"
+  sunnyalert: "\U000F0F37"
+  sunnyoff: "\U000F14E4"
+  sunset: "\U000F059A"
+  sunsetdown: "\U000F059B"
+  sunsetup: "\U000F059C"
+  tornado: "\U000F0F38"
+  windy: "\U000F059D"
+  windyvariant: "\U000F059E"
+  happyface: "\U000F01F5"
+
+esphome:
+  name: ha-panel-1
+  friendly_name: HA panel 1
+  platformio_options:
+    board_build.flash_mode: dio
+  on_boot:
+    - delay: 5s
+    - lvgl.widget.hide: boot_screen
+    - delay: 30s
+    - script.execute: screen_light
+    
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
+      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
+      CONFIG_SPIRAM_FETCH_INSTRUCTIONS: y
+      CONFIG_SPIRAM_RODATA: y
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "uKRIUzC4qoso5frcHnMUcCRUvW9qOjyJr4ceCIdrvDM="
+  on_client_connected:
+    - if:
+        condition:
+          lambda: 'return (0 == client_info.find("Home Assistant "));'
+        then:
+          - lvgl.widget.show: lbl_hastatus
+  on_client_disconnected:
+    - if:
+        condition:
+          lambda: 'return (0 == client_info.find("Home Assistant "));'
+        then:
+          - lvgl.widget.hide: lbl_hastatus
+
+ota:
+  - platform: esphome
+    password: "7944704954b61e83f41234ef5640d233"
+
+wifi:
+  networks:
+  - ssid: !secret wifi_ssid_backup
+    password: !secret wifi_password_backup
+  - ssid: !secret wifi_ssid
+    password: !secret wifi_password
+  #use_address: 192.168.0.180
+  on_connect:
+    - component.update: cam_bg
+  ap:
+    ssid: "Ha-Panel-1 Fallback Hotspot"
+    password: !secret wifi_password
+
+captive_portal:
+
+http_request:
+  useragent: esphome-ha-panel-1
+  timeout: 10s
+
+
+#-----------------------------------------------------------------------------------------------------------
+# Content
+#------------------------------------------- 
+lvgl:
+
+  displays:
+    - my_display
+  touchscreens:
+    - my_touchscreen
+#-------------------------------------------
+  theme:
+    button:
+      bg_color: 0x333333
+      bg_opa: 85%
+      border_color: 0x333333
+      border_width: 0
+      text_color: 0xFFFFFF
+      pressed:
+        bg_color: 0x111111
+        bg_grad_color: 0x111111
+      checked:
+        bg_color: 0x111111
+        bg_grad_color: 0x111111
+        text_color: 0xf6ff00
+    buttonmatrix:
+      bg_opa: TRANSP
+      border_color: 0x333333
+      border_width: 0
+      text_color: 0xFFFFFF
+      pad_all: 0
+      items:
+        bg_color: 0x333333
+        bg_grad_color: 0x333333
+        bg_grad_dir: VER
+        bg_opa: COVER
+        border_color: 0x333333
+        border_width: 1
+        text_color: 0xFFFFFF
+        pressed:
+          bg_color: 0x111111
+          bg_grad_color: 0x111111
+        checked:
+          bg_color: 0x111111
+          bg_grad_color: 0x111111
+          text_color: 0xEEEEEE
+    switch:
+      border_width: 0
+      outline_opa: TRANSP
+      shadow_width: 0
+      # Track (background)
+      bg_color: 0x076001    # green when OFF
+      bg_opa: COVER
+      checked:
+        bg_color: 0xC58402  # orange when ON
+        bg_opa: COVER
+        border_width: 0
+        outline_opa: TRANSP
+        shadow_width: 0
+      # Indicator (the inner fill)
+      indicator:
+        bg_opa: TRANSP
+        border_width: 0
+        outline_opa: TRANSP
+        shadow_width: 0
+        checked:
+          bg_color: 0xC58402
+          bg_opa: COVER
+          border_width: 0
+          outline_opa: TRANSP
+          shadow_width: 0
+      # Knob (the circle)
+      knob:
+        bg_color: 0xFFFFFF   # solid white
+        bg_opa: COVER
+        border_width: 0
+        outline_opa: TRANSP
+        shadow_width: 0
+        checked:
+          bg_color: 0xFFFFFF
+          bg_opa: COVER
+          border_width: 0
+          outline_opa: TRANSP
+          shadow_width: 0
+    slider:
+      border_width: 1
+      border_opa: 30%
+      bg_color: 0x9c9c9c
+      bg_opa: 15%
+      indicator:
+        bg_color: 0x333333
+        bg_grad_color: 0x333333
+        bg_opa: COVER
+      knob:
+        bg_color: 0x444444
+        bg_grad_color: 0x444444
+        bg_opa: COVER
+        border_color: 0x444444
+        border_width: 1
+        text_color: 0xFFFFFF
+#-------------------------------------------
+  style_definitions:
+      - id: header_footer
+        bg_color: 0x444444
+        bg_opa: COVER
+        radius: 0
+        pad_all: 0
+        pad_row: 0
+        pad_column: 2
+        border_width: 0
+        width: 100%
+        height: 40
+      - id: header_footer_btn
+        bg_color: 0x444444
+        bg_opa: COVER
+        radius: 0
+        border_width: 0
+        pad_all: 0
+        height: 40
+        width: 160
+#-------------------------------------------
+  top_layer:
+    widgets:
+      - label:
+          text: "\uF1EB"
+          id: lbl_hastatus
+          hidden: true
+          align: top_right
+          x: -2
+          y: 2
+          text_align: right
+          text_color: 0xFFFFFF
+      - label:
+          text: $boiler_on
+          id: heating_status
+          hidden: true
+          align: top_left
+          text_font: top_icons 
+          text_align: left
+          text_color: 0xFFFFFF
+      - label:
+          text: $door_open
+          id: front_door_status
+          hidden: true
+          x: 25
+          align: top_left
+          text_font: top_icons 
+          text_align: left
+          text_color: 0xFFFFFF
+      - label:
+          text: $door_lock
+          id: lock_door_status
+          hidden: true
+          x: 50
+          align: top_left
+          text_font: top_icons 
+          text_align: left
+          text_color: 0xFFFFFF
+      - buttonmatrix:
+          id: top_layer
+          align: bottom_mid
+          width: 100%
+          height: 40
+          styles: header_footer
+          items:
+            styles: header_footer_btn
+          rows:
+            - buttons:
+                - id: page_prev
+                  text: "\uF053"
+                  on_press:
+                    then:
+                      lvgl.page.previous:
+                - id: page_home
+                  text: "\uF015"
+                  on_press:
+                    then:
+                      - lvgl.page.show: clock_page
+                      - script.execute: hold_to_restart
+                  on_release:
+                    then:
+                      - script.stop: hold_to_restart
+
+                - id: page_next
+                  text: "\uF054"
+                  on_press:
+                    then:
+                      lvgl.page.next:
+      - obj:
+          id: boot_screen
+          x: 0
+          y: 0
+          width: 100%
+          height: 100%
+          bg_color: 0x000000
+          bg_opa: COVER
+          radius: 0
+          pad_all: 0
+          border_width: 0
+          widgets:
+            - image:
+                align: CENTER
+                src: boot_logo
+                y: -40
+            - spinner:
+                align: CENTER
+                y: 95
+                height: 50
+                width: 50
+                spin_time: 1s
+                arc_length: 60deg
+                arc_width: 8
+                indicator:
+                  arc_color: 0x18bcf2
+                  arc_width: 8
+          on_press:
+            - lvgl.widget.hide: boot_screen
+
+  page_wrap: true
+  pages:  
+    - id: clock_page
+      widgets:
+        - image:
+            align: CENTER
+            src: back5 #6
+        - label:
+            align: CENTER
+            id: display_weather_icon
+            text: $happyface
+            text_color: 0xFFFFFF
+            bg_opa: TRANSP
+            text_font: weather_icons
+            y: -165
+            x: -75
+        - label:
+            align: CENTER
+            id: display_week_day
+            text: weekday
+            text_font: roboto24
+            text_color: 0xFFFFFF
+            y: -105
+            x: -75
+        - label:
+            align: CENTER
+            id: display_date
+            text: date
+            text_font: roboto40
+            text_color: 0xFFFFFF
+            y: -65
+            x: -75
+        - label:
+            align: CENTER
+            id: display_time
+            text: clock
+            text_font: roboto90
+            text_color: 0xFFFFFF
+            y: 10
+            x: -75
+        - label:
+            align: CENTER
+            id: display_weather
+            text: weather
+            text_font: roboto24
+            text_color: 0xFFFFFF
+            y: 100
+            x: -75
+        - label:
+            align: CENTER
+            id: display_temp
+            text: temp
+            text_font: roboto24
+            text_color: 0xFFFFFF
+            y: 130
+            x: -75
+        - label:
+            align: CENTER
+            id: display_house_temp
+            text: house temp
+            text_font: roboto24
+            text_color: 0xFFFFFF
+            y: 160
+            x: -75
+        - obj:
+            align: CENTER
+            width: 150
+            height: 480
+            bg_opa: 30%
+            border_opa: TRANSP
+            pad_all: 5
+            x: 164
+            y: 0
+            widgets:
+              - slider:
+                  id: living_room_dimmer
+                  width: 30
+                  height: 220
+                  x: 55
+                  y: 60
+                  min_value: 30
+                  max_value: 160
+                  value: 160
+                  on_release:
+                    - number.set:
+                        id: dimmer_val
+                        value: !lambda "return int(x);"
+
+              - button:
+                  id: living_room_light_l1_btn
+                  align: CENTER
+                  width: 80
+                  height: 80
+                  y: 120
+                  checkable: true
+                  widgets:
+                    - label:
+                        text_font: btn_icons_font2
+                        text: $lightbulb
+                        align: CENTER
+                  on_click:
+                    - homeassistant.service:
+                        service: light.toggle
+                        data_template:
+                          entity_id: light.living_room_light_l1
+                          brightness: !lambda "return id(dimmer_level);"
+
+    - id: heating_page
+      widgets:
+        - image:
+            align: CENTER
+            src: back5
+        - obj:
+            layout:
+              type: GRID
+              grid_columns: [FR(1), FR(1), FR(1)]
+              grid_rows: [FR(50), FR(50)]
+            width: 100%
+            height: 90%
+            pad_all: 15
+            pad_top: 22
+            bg_opa: TRANSP
+            border_opa: TRANSP
+            widgets:
+              # --- Boiler tile: full-size button with embedded toggle ---
+              - button:
+                  id: boiler_heating_btn
+                  grid_cell_column_pos: 0
+                  grid_cell_row_pos: 0
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH
+                  checkable: true
+                  align: CENTER
+                  width: 100%
+                  height: 100%
+                  widgets:
+                    # Icon in the middle
+                    - label:
+                        text_font: btn_icons_font
+                        text: $boiler_on
+                        align: CENTER
+                        y: -35
+
+                    # Title under the icon
+                    - label:
+                        text: "Heating"
+                        long_mode: dot
+                        align: CENTER
+                        y: 0
+
+                    # Mode label (will update dynamically)
+                    - label:
+                        id: heating_mode
+                        text: "1 Cycle"
+                        text_font: caption
+                        align: BOTTOM_MID
+                        y: -40
+
+                    # Toggle switch
+                    - switch:
+                        id: heating_continuous_sw
+                        align: BOTTOM_MID
+                        y: -10
+                        width: 80
+                        height: 25
+                        on_click:
+                          - homeassistant.service:
+                              service: input_boolean.toggle
+                              data:
+                                entity_id: input_boolean.heating_continuous
+
+                  # Tap anywhere on the big tile to toggle Heating Master
+                  on_click:
+                    - homeassistant.service:
+                        service: input_boolean.toggle
+                        data:
+                          entity_id: input_boolean.heating_master
+                    
+              - obj:
+                  id: info_btn
+                  grid_cell_column_pos: 0
+                  grid_cell_row_pos: 1
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH
+                  bg_color: 0x333333
+                  bg_opa: 85%
+                  border_color: 0x333333
+                  border_width: 0
+                  text_color: 0xFFFFFF
+                  widgets:
+                    - button:
+                        align: CENTER
+                        width: 110
+                        height: 35
+                        y: -60
+                        checkable: false
+                        widgets:
+                          - label:
+                              text_font: roboto24
+                              text: "+"
+                              align: CENTER
+                        on_click:
+                          - homeassistant.service:
+                              service: input_number.increment
+                              data: 
+                                entity_id: input_number.house_temperature_setpoint
+                    
+                    - label:
+                        text_font: btn_icons_font2
+                        text: $house_temp
+                        align: CENTER
+                        y: -5
+                    - label:
+                        id: house_setpoint_display
+                        text_font: roboto24
+                        text: "--- °C"
+                        align: CENTER
+                        y: 25
+                        
+                    - button:
+                        align: CENTER
+                        width: 110
+                        height: 35
+                        y: 60
+                        checkable: false
+                        widgets:
+                          - label:
+                              text_font: roboto24
+                              text: "-"
+                              align: CENTER
+                        on_click:
+                          - homeassistant.service:
+                              service: input_number.decrement
+                              data: 
+                                entity_id: input_number.house_temperature_setpoint
+            
+              - button:
+                  id: bedroom_heating_btn
+                  checkable: true
+                  grid_cell_column_pos: 1
+                  grid_cell_row_pos: 0
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH
+                  widgets:
+                    - label:
+                        text_font: btn_icons_font
+                        text: $radiator
+                        align: CENTER
+                        y: -20
+                    - label:
+                        text: "Bedroom"
+                        long_mode: dot
+                        align: CENTER
+                        y: 30
+                    - label:
+                        id: display_temp_bedroom
+                        text: ""
+                        text_font: caption
+                        align: CENTER
+                        y: 55
+                  on_click:
+                    - homeassistant.service:
+                        service: input_boolean.toggle
+                        data: 
+                          entity_id: input_boolean.area_bedroom
+                          
+              - button:
+                  id: living_room_heating_btn
+                  checkable: true
+                  grid_cell_column_pos: 1
+                  grid_cell_row_pos: 1
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH
+                  widgets:
+                    - label:
+                        text_font: btn_icons_font
+                        text: $radiator
+                        align: CENTER
+                        y: -20
+                    - label:
+                        text: "Living room"
+                        long_mode: dot
+                        align: CENTER
+                        y: 30
+                    - label:
+                        id: display_temp_living_room
+                        text: ""
+                        text_font: caption
+                        align: CENTER
+                        y: 55
+                  on_click:
+                    - homeassistant.service:
+                        service: input_boolean.toggle
+                        data: 
+                          entity_id: input_boolean.area_living
+
+              - button:
+                  id: office_heating_btn
+                  checkable: true
+                  grid_cell_column_pos: 2
+                  grid_cell_row_pos: 0
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH
+                  widgets:
+                    - label:
+                        text_font: btn_icons_font
+                        text: $radiator
+                        align: CENTER
+                        y: -20
+                    - label:
+                        text: "Office"
+                        long_mode: dot
+                        align: CENTER
+                        y: 30
+                    - label:
+                        id: display_temp_office
+                        text: ""
+                        text_font: caption
+                        align: CENTER
+                        y: 55
+                  on_click:
+                    - homeassistant.service:
+                        service: input_boolean.toggle
+                        data: 
+                          entity_id: input_boolean.area_office
+
+              - button:
+                  id: kids_heating_btn
+                  checkable: true
+                  grid_cell_column_pos: 2
+                  grid_cell_row_pos: 1
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH
+                  widgets:
+                    - label:
+                        text_font: btn_icons_font
+                        text: $radiator
+                        align: CENTER
+                        y: -20
+                    - label:
+                        text: "Kids"
+                        long_mode: dot
+                        align: CENTER
+                        y: 30
+                    - label:
+                        id: display_temp_kids
+                        text: ""
+                        text_font: caption
+                        align: CENTER
+                        y: 55
+                  on_click:
+                    - homeassistant.service:
+                        service: input_boolean.toggle
+                        data: 
+                          entity_id: input_boolean.area_kids
+    
+    ##########################################################################################################
+    - id: buttons_page1
+      widgets:
+        - image:
+            align: CENTER
+            src: back6
+        - obj:
+            layout:
+              type: GRID
+              grid_columns: [FR(1), FR(1), FR(1)]
+              grid_rows: [FR(50), FR(50)]
+            width: 100%
+            height: 90%
+            pad_all: 15
+            pad_top: 22
+            bg_opa: TRANSP
+            border_opa: TRANSP
+            widgets:
+              - button:
+                  id: light_office_btn
+                  checkable: true
+                  grid_cell_column_pos: 0
+                  grid_cell_row_pos: 0
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH
+                  widgets:
+                    - label:
+                        text_font: btn_icons_font
+                        text: $lightbulb
+                        align: CENTER
+                        y: -20
+                    - label:
+                        text: "Office"
+                        long_mode: dot
+                        align: CENTER
+                        y: 30
+                  on_click:
+                    - homeassistant.service:
+                        service: switch.toggle
+                        data_template:
+                          entity_id: switch.office_light
+
+              - button:
+                  id: light_outside_btn
+                  checkable: true
+                  grid_cell_column_pos: 0
+                  grid_cell_row_pos: 1
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH
+                  widgets:
+                    - label:
+                        text_font: btn_icons_font
+                        text: $nightbulb
+                        align: CENTER
+                        y: -20
+                    - label:
+                        text: "Outside"
+                        long_mode: dot
+                        align: CENTER
+                        y: 30
+                  on_click:
+                    - homeassistant.service:
+                        service: light.toggle
+                        data_template:
+                          entity_id: light.ha_panel_2_panel_switch_1
+                    
+              - button:
+                  id: light_kids_btn
+                  checkable: true
+                  grid_cell_column_pos: 1
+                  grid_cell_row_pos: 0
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH
+                  widgets:
+                    - label:
+                        text_font: btn_icons_font
+                        text: $lightbulb
+                        align: CENTER
+                        y: -20
+                    - label:
+                        text: "Kids"
+                        long_mode: dot
+                        align: CENTER
+                        y: 30
+                  on_click:
+                    - homeassistant.service:
+                        service: switch.toggle
+                        data_template:
+                          entity_id: switch.kids_switch_left
+                          
+              - button:
+                  id: light_bedroom_btn
+                  checkable: true
+                  grid_cell_column_pos: 1
+                  grid_cell_row_pos: 1
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH
+                  widgets:
+                    - label:
+                        text_font: btn_icons_font
+                        text: $lightbulb
+                        align: CENTER
+                        y: -20
+                    - label:
+                        text: "Bedroom"
+                        long_mode: dot
+                        align: CENTER
+                        y: 30
+                  on_click:
+                    - homeassistant.service:
+                        service: light.toggle
+                        data_template:
+                          entity_id: light.bedroom_switch_l1
+
+              - button:
+                  id: light_corridor_btn
+                  checkable: true
+                  grid_cell_column_pos: 2
+                  grid_cell_row_pos: 0
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH
+                  widgets:
+                    - label:
+                        text_font: btn_icons_font
+                        text: $lightbulb
+                        align: CENTER
+                        y: -20
+                    - label:
+                        text: "Corridor"
+                        long_mode: dot
+                        align: CENTER
+                        y: 30
+                  on_click:
+                    - homeassistant.service:
+                        service: light.toggle
+                        data_template:
+                          entity_id: light.ha_panel_3_panel_switch
+                        
+              - button:
+                  id: light_bathroom_btn
+                  checkable: true
+                  grid_cell_column_pos: 2
+                  grid_cell_row_pos: 1
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH
+                  widgets:
+                    - label:
+                        text_font: btn_icons_font
+                        text: $lightbulb
+                        align: CENTER
+                        y: -20
+                    - label:
+                        text: "Bathroom"
+                        long_mode: dot
+                        align: CENTER
+                        y: 30
+                  on_click:
+                    - homeassistant.service:
+                        service: switch.toggle
+                        data_template:
+                          entity_id: switch.bathroom_light
+                  
+    ##########################################################################################################
+    - id: camera_page
+      widgets:
+        - obj:
+            id: cam_bg_fallback
+            align: top_left
+            width: 100%
+            height: 100%
+            bg_color: 0x000000
+            bg_opa: COVER
+            border_width: 0
+            radius: 0
+            pad_all: 0
+
+        - image:
+            id: cam_background
+            align: top_left
+            x: 0
+            y: 0
+            src: cam_bg
+            
+#--------------------- Sensors -------------------
+globals:
+  - id: dimmer_level
+    type: int
+    restore_value: no
+
+  - id: cam_page_active
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+number:
+  - platform: template
+    id: dimmer_val
+    name: "dimmer val"
+    min_value: 0
+    max_value: 255
+    step: 1
+    initial_value: 160
+    optimistic: True
+    internal: True
+    on_value:
+      then:
+        - globals.set:
+            id: dimmer_level
+            value: !lambda 'return int(x);'
+        - if:
+            condition:
+              lambda: 'return id(living_room_light_l1).state == true;'
+            then:
+              - homeassistant.service:
+                  service: light.turn_on
+                  data_template:
+                    entity_id: light.living_room_light_l1
+                    brightness: !lambda "return x;"
+
+sensor:
+  - platform: uptime
+    id: uptime_internal
+
+  - platform: wifi_signal
+    name: "WiFi Signal dB"
+    id: wifi_signal_db
+    update_interval: 60s
+    entity_category: "diagnostic"
+
+  - platform: copy
+    source_id: wifi_signal_db
+    name: "WiFi Percent"
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "%"
+    entity_category: "diagnostic"
+    device_class: ""
+
+  - platform: homeassistant
+    id: house_setpoint_ha
+    entity_id: input_number.house_temperature_setpoint
+    on_value:
+      - logger.log: id(house_setpoint_ha).state.c_str()
+      - lvgl.label.update:
+          id: house_setpoint_display
+          text: 
+            format: "%.1f °C"
+            args: ["id(house_setpoint_ha).state"]
+      
+  - platform: homeassistant
+    id: house_temp_sensor
+    entity_id: sensor.house_average_temperature
+    on_value:
+      then:
+         - lvgl.label.update:
+            id: display_house_temp
+            text: 
+              format: "$house_temp %.1f °C"
+              args: ["id(house_temp_sensor).state"]
+  
+  - platform: homeassistant
+    id: temp_sensor_bedroom
+    entity_id: sensor.bedroom_th_temperature
+    on_value:
+      then:
+         - lvgl.label.update:
+            id: display_temp_bedroom
+            text: 
+              format: "$thermometer %.1f °C"
+              args: ["id(temp_sensor_bedroom).state"]
+
+  - platform: homeassistant
+    id: temp_sensor_office
+    entity_id: sensor.office_th_temperature
+    on_value:
+      then:
+         - lvgl.label.update:
+            id: display_temp_office
+            text: 
+              format: "$thermometer %.1f °C"
+              args: ["id(temp_sensor_office).state"]
+              
+  - platform: homeassistant
+    id: temp_sensor_kids
+    entity_id: sensor.kids_th_temperature
+    on_value:
+      then:
+         - lvgl.label.update:
+            id: display_temp_kids
+            text: 
+              format: "$thermometer %.1f °C"
+              args: ["id(temp_sensor_kids).state"]
+  
+  - platform: homeassistant
+    id: temp_sensor_living_room
+    entity_id: sensor.living_room_th_temperature
+    on_value:
+      then:
+         - lvgl.label.update:
+            id: display_temp_living_room
+            text: 
+              format: "$thermometer %.1f °C"
+              args: ["id(temp_sensor_living_room).state"]
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+    ssid:
+      name: SSID
+    bssid:
+      name: BSSID
+    mac_address:
+      name: Mac Wifi Address
+    scan_results:
+      name: Latest Scan Results
+    dns_address:
+      name: DNS Address
+
+  - platform: homeassistant
+    id: ha_week_day
+    entity_id: sensor.week_day
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: display_week_day
+            text: !lambda return id(ha_week_day).state.c_str();
+    
+  - platform: homeassistant
+    id: ha_time
+    entity_id: sensor.time
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: display_time
+            text: !lambda return id(ha_time).state.c_str();
+  
+  - platform: homeassistant
+    id: ha_date
+    entity_id: sensor.date
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: display_date
+            text: !lambda |-
+              std::string date_str = id(ha_date).state.c_str();
+              std::string year = date_str.substr(0, 4);
+              std::string month = date_str.substr(5, 2);
+              std::string day = date_str.substr(8, 2);
+              return (day + "/" + month + "/" + year).c_str();
+  
+  - platform: homeassistant
+    id: ha_weather_cond
+    entity_id: weather.forecast_home
+    filters:
+      - to_upper
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: display_weather
+            text: !lambda return id(ha_weather_cond).state.c_str();
+
+  - platform: template
+    id: weather_condition_icon
+    lambda: |-
+      std::string state = id(ha_weather_cond).state.c_str();
+      if (state == "RAINY") { return std::string("$rainy"); }
+      else if (state == "CLOUDY") { return std::string("$cloudy"); }
+      else if (state == "PARTLYCLOUDY") { return std::string("$partlycloudy"); }
+      else if (state == "SUNNY") { return std::string("$sunny"); }
+      else if (state == "FOG") { return std::string("$fog"); }
+      else if (state == "HAIL") { return std::string("$hail"); }
+      else if (state == "HAZY") { return std::string("$hazy"); }
+      else if (state == "LIGHTNING") { return std::string("$lightning"); }
+      else if (state == "LIGHTNINGRAINY") { return std::string("$lightningrainy"); }
+      else if (state == "NIGHT") { return std::string("$night"); }
+      else if (state == "CLEAR-NIGHT") { return std::string("$night"); }
+      else if (state == "NIGHTPARTLYCLOUDY") { return std::string("$nightpartlycloudy"); }
+      else if (state == "PARTLYRAINY") { return std::string("$partlyrainy"); }
+      else if (state == "PARTLYLIGHTNING") { return std::string("$partlylightning"); }
+      else if (state == "PARTLYSNOWY") { return std::string("$partlysnowy"); }
+      else if (state == "PARTLYSNOWYRAINY") { return std::string("$partlysnowyrainy"); }
+      else if (state == "POURING") { return std::string("$pouring"); }
+      else if (state == "SNOWY") { return std::string("$snowy"); }
+      else if (state == "SNOWYHEAVY") { return std::string("$snowyheavy"); }
+      else if (state == "SUNSET") { return std::string("$sunset"); }
+      else if (state == "TORNADO") { return std::string("$tornado"); }
+      else if (state == "WINDY") { return std::string("$windy"); }
+      else if (state == "HURRICANE") { return std::string("$hurricane"); }
+      return std::string("$happyface");
+    on_value:
+      then:
+        - logger.log: id(weather_condition_icon).state.c_str()
+        - lvgl.label.update:
+            id: display_weather_icon
+            text: !lambda return id(weather_condition_icon).state.c_str();
+  
+  - platform: homeassistant
+    id: ha_weather_temp
+    entity_id: weather.forecast_home
+    attribute: temperature
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: display_temp
+            text: 
+              format: "\U000F050F %s °C"
+              args: ["id(ha_weather_temp).state.c_str()"]
+
+  - platform: template
+    name: Uptime
+    lambda: |-
+      int seconds = (id(uptime_internal).state);
+      int days = seconds / (24 * 3600);
+      seconds = seconds % (24 * 3600); 
+      int hours = seconds / 3600;
+      seconds = seconds % 3600;
+      int minutes = seconds /  60;
+      seconds = seconds % 60;
+      return { ( std::to_string(days) + "d " + std::to_string(hours) + "h " + std::to_string(minutes) + "m " + std::to_string(seconds) + "s").c_str() };
+    icon: mdi:clock-start
+    update_interval: 60s
+
+binary_sensor:
+  #Front Doorbell
+  - platform: homeassistant
+    id: doorbell_sensor
+    entity_id: binary_sensor.front_door_camera_visitor              
+    trigger_on_initial_state: false
+    on_state:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(doorbell_sensor).state == true;'            
+            then:
+              - component.update: cam_bg 
+              - script.execute: screen_light       
+              - lvgl.page.show: camera_page
+  
+  #Front Door Mailbox
+  - platform: homeassistant
+    id: mailbox_sensor
+    entity_id: binary_sensor.smart_door_mailbox
+    trigger_on_initial_state: false
+    on_state:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(mailbox_sensor).state == true;'
+            then:
+              - component.update: cam_bg 
+              - script.execute: screen_light       
+              - lvgl.page.show: camera_page
+
+  #Door Statuses
+  - platform: homeassistant
+    id: front_door_sensor
+    entity_id: binary_sensor.entrance_door_contact
+    trigger_on_initial_state: true
+    internal: true
+    on_state:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(front_door_sensor).state == true;'
+            then:
+              - lvgl.widget.show: front_door_status
+            else:
+              - lvgl.widget.hide: front_door_status
+  
+  - platform: homeassistant
+    id: lock_door_sensor
+    entity_id: binary_sensor.smart_door_lock
+    trigger_on_initial_state: true
+    internal: true
+    on_state:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(lock_door_sensor).state == true;'
+            then:
+              - lvgl.widget.show: lock_door_status
+            else:
+              - lvgl.widget.hide: lock_door_status
+
+  - platform: homeassistant
+    id: living_room_light_l1
+    entity_id: light.living_room_light_l1
+    trigger_on_initial_state: true
+    on_state:
+      then:
+        - lvgl.widget.update:
+            id: living_room_light_l1_btn
+            state:
+              checked: !lambda "return x;"
+
+  # --- Heating Master (panel button & header icon) ---
+  - platform: homeassistant
+    id: heating_master_bool
+    entity_id: input_boolean.heating_master
+    trigger_on_initial_state: true
+    internal: true
+    on_state:
+      then:
+        # Reflect HA -> LVGL button "checked" state
+        - lvgl.widget.update:
+            id: boiler_heating_btn
+            state:
+              checked: !lambda 'return x;'
+        # Header icon show/hide
+        - if:
+            condition:
+              lambda: 'return x;'
+            then:
+              - lvgl.widget.show: heating_status
+            else:
+              - lvgl.widget.hide: heating_status
+    
+  # --- HA mirror binary sensor for continuous toggle ---
+  - platform: homeassistant
+    id: heating_continuous_bool
+    entity_id: input_boolean.heating_continuous
+    trigger_on_initial_state: true
+    internal: true
+    on_state:
+      then:
+        - if:
+            condition:
+              lambda: 'return x;'
+            then:
+              # When switch ON → label says "Continuous"
+              - lvgl.label.update:
+                  id: heating_mode
+                  text: "Continuous"
+              - lvgl.widget.update:
+                  id: heating_continuous_sw
+                  state:
+                    checked: true
+            else:
+              # When switch OFF → label says "1 Cycle"
+              - lvgl.label.update:
+                  id: heating_mode
+                  text: "1 Cycle"
+              - lvgl.widget.update:
+                  id: heating_continuous_sw
+                  state:
+                    checked: false
+
+  # --- Areas: keep each button in sync with its input_boolean ---
+  - platform: homeassistant
+    id: area_bedroom_bool
+    entity_id: input_boolean.area_bedroom
+    trigger_on_initial_state: true
+    internal: true
+    on_state:
+      then:
+        - lvgl.widget.update:
+            id: bedroom_heating_btn
+            state:
+              checked: !lambda return x;
+
+  - platform: homeassistant
+    id: area_living_bool
+    entity_id: input_boolean.area_living
+    trigger_on_initial_state: true
+    internal: true
+    on_state:
+      then:
+        - lvgl.widget.update:
+            id: living_room_heating_btn
+            state:
+              checked: !lambda return x;
+
+  - platform: homeassistant
+    id: area_office_bool
+    entity_id: input_boolean.area_office
+    trigger_on_initial_state: true
+    internal: true
+    on_state:
+      then:
+        - lvgl.widget.update:
+            id: office_heating_btn
+            state:
+              checked: !lambda return x;
+
+  - platform: homeassistant
+    id: area_kids_bool
+    entity_id: input_boolean.area_kids
+    trigger_on_initial_state: true
+    internal: true
+    on_state:
+      then:
+        - lvgl.widget.update:
+            id: kids_heating_btn
+            state:
+              checked: !lambda return x;
+
+  - platform: homeassistant
+    id: living_room_pir
+    entity_id: binary_sensor.living_room_pir_occupancy 
+    trigger_on_initial_state: false
+    internal: true
+    on_state:
+      then:
+        - script.execute: screen_light
+  
+  #Extra Buttons Page 1
+  - platform: homeassistant
+    id: outside_light
+    entity_id: light.ha_panel_2_panel_switch_1
+    trigger_on_initial_state: true
+    on_state:
+      then:
+        - lvgl.widget.update:
+            id: light_outside_btn
+            state:
+              checked: !lambda "return x;"
+  
+  - platform: homeassistant
+    id: office_light
+    entity_id: switch.office_light
+    trigger_on_initial_state: true
+    on_state:
+      then:
+        - lvgl.widget.update:
+            id: light_office_btn
+            state:
+              checked: !lambda "return x;"
+  
+  - platform: homeassistant
+    id: kids_light
+    entity_id: switch.kids_switch_left
+    trigger_on_initial_state: true
+    on_state:
+      then:
+        - lvgl.widget.update:
+            id: light_kids_btn
+            state:
+              checked: !lambda "return x;"
+  
+  - platform: homeassistant
+    id: bedroom_light
+    entity_id: light.bedroom_switch_l1
+    trigger_on_initial_state: true
+    on_state:
+      then:
+        - lvgl.widget.update:
+            id: light_bedroom_btn
+            state:
+              checked: !lambda "return x;"
+
+  - platform: homeassistant
+    id: corridor_light
+    entity_id: light.ha_panel_3_panel_switch
+    trigger_on_initial_state: true
+    on_state:
+      then:
+        - lvgl.widget.update:
+            id: light_corridor_btn
+            state:
+              checked: !lambda "return x;"
+  
+  - platform: homeassistant
+    id: bathroom_light
+    entity_id: switch.bathroom_light
+    trigger_on_initial_state: true
+    on_state:
+      then:
+        - lvgl.widget.update:
+            id: light_bathroom_btn
+            state:
+              checked: !lambda "return x;"
+        
+switch:  
+  - platform: restart
+    name: Restart
+    id: restart_switch
+
+#-------------------------------------------
+# Internal outputs
+#-------------------------------------------
+output:   
+  # Backlight LED
+  - platform: ledc
+    pin: GPIO38
+    id: GPIO38
+    frequency: 100Hz
+
+  # Built in 240v relay
+  - platform: gpio
+    pin: 40
+    id: panel_output
+#-------------------------------------------
+# LIGHTS
+#-------------------------------------------
+light:
+  - platform: monochromatic
+    output: GPIO38
+    name: Backlight
+    id: backlight
+    restore_mode: ALWAYS_ON
+  
+  - platform: binary
+    name: "Panel Switch"
+    id: panel_switch
+    output: panel_output
+    
+#-------------------------------------------
+# Graphics and Fonts
+#-------------------------------------------
+online_image:
+  - id: cam_bg
+    url: !secret camera_snap_url
+    format: jpeg
+    type: RGB565
+    resize: 480x480
+    on_download_finished:
+      - lvgl.image.update:
+          id: cam_background
+          src: cam_bg
+      - component.update: my_display
+    on_error:
+      - logger.log:
+          level: ERROR
+          format: "Camera snapshot download failed"
+
+image:
+  - file: 'images/back5.png'
+    id: back5
+    type: RGB565
+  
+  - file: 'images/back6.png'
+    id: back6
+    type: RGB565
+  
+  - file: 'images/back7.png'
+    id: back7
+    type: RGB565
+  
+  - file: 'images/ha_logo.png'
+    id: boot_logo
+    resize: 200x200
+    type: RGB565
+    transparency: alpha_channel
+    
+font:
+  - file: "gfonts://Roboto"
+    id: roboto24
+    size: 24
+    bpp: 4
+    extras:
+      - file: 'fonts/materialdesignicons-webfont.ttf'
+        glyphs: [
+          "\U000F004B",
+          "\U000F006E",
+          "\U000F012C",
+          "\U000F179B",
+          "\U000F0748",
+          "\U000F1A1B",
+          "\U000F02DC",
+          "\U000F0A02",
+          "\U000F035F",
+          "\U000F0156",
+          "\U000F0C5F", 
+          "\U000f0084",
+          "\U000f0091",
+          "\U000F050F",
+          $house_temp,
+          ]
+  
+  - file: "gfonts://Roboto"
+    id: caption
+    size: 12
+    bpp: 4
+    extras:
+      - file: 'fonts/materialdesignicons-webfont.ttf'
+        glyphs: [
+          $thermometer 
+        ]
+
+  - file: "gfonts://Roboto"
+    id: weather_icons
+    size: 110
+    bpp: 4
+    extras:
+      - file: 'fonts/materialdesignicons-webfont.ttf'
+        glyphs: [
+          $cloudy,
+          $cloudyalert,
+          $cloudyarrowright,
+          $fog,
+          $hail,
+          $hazy,
+          $hurricane,
+          $lightning,
+          $lightningrainy,
+          $night,
+          $nightpartlycloudy,
+          $partlycloudy,
+          $partlylightning,
+          $partlyrainy,
+          $partlysnowy,
+          $partlysnowyrainy,
+          $pouring,
+          $rainy,
+          $snowy,
+          $snowyheavy,
+          $snowyrainy,
+          $sunny,
+          $sunnyalert,
+          $sunnyoff,
+          $sunset,
+          $sunsetdown,
+          $sunsetup,
+          $tornado,
+          $windy,
+          $windyvariant,
+          $happyface
+        ]
+  
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: top_icons
+    glyphs: [
+      $boiler_on,
+      $door_open,
+      $door_lock
+      ]    
+
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: light32
+    size: 32
+    bpp: 4
+    glyphs: [
+      "\U000F0335",
+      "\U000F0769",
+      "\U000F08DD",
+      "\U000F12BA",
+      ]          
+      
+  - file: "gfonts://Roboto"
+    id: roboto40
+    size: 40
+    bpp: 4
+  
+  - file: "gfonts://Roboto"
+    id: btn_icons_font
+    size: 70
+    bpp: 4
+    extras:
+      - file: 'fonts/materialdesignicons-webfont.ttf'
+        glyphs: [
+          $lightbulb,
+          $boiler_on,
+          $boiler_off,
+          $radiator,
+          $ceiling_light,
+          $house_temp,
+          $nightbulb
+        ]
+    
+  - file: "gfonts://Roboto"
+    id: btn_icons_font2
+    size: 50
+    bpp: 4
+    extras:
+      - file: 'fonts/materialdesignicons-webfont.ttf'
+        glyphs: [
+          $lightbulb,
+          $house_temp,
+          $nightbulb
+        ]
+
+  - file: "gfonts://Roboto"
+    id: roboto90
+    size: 90
+    bpp: 4          
+
+#-------------------------------------------
+# Touchscreen gt911 i2c
+#-------------------------------------------
+i2c:
+  - id: bus_a
+    sda: GPIO19
+    scl: GPIO45
+    scan: true
+    
+touchscreen:
+  platform: gt911
+  transform:
+    mirror_x: false
+    mirror_y: false
+  id: my_touchscreen
+  display: my_display
+
+  on_touch:
+    - logger.log:
+          format: Touch at (%d, %d)
+          args: [touch.x, touch.y]
+    - lambda: |-
+          ESP_LOGI("cal", "x=%d, y=%d, x_raw=%d, y_raw=%0d",
+              touch.x,
+              touch.y,
+              touch.x_raw,
+              touch.y_raw
+              );
+    - script.stop: screen_light
+    - script.execute: screen_light
+
+script:
+  - id: refresh_cam_bg
+    mode: restart
+    then:
+      - component.update: cam_bg
+      - while:
+          condition:
+            lambda: 'return id(cam_page_active);'
+          then:
+            - delay: 5s
+            - component.update: cam_bg
+
+  - id: hold_to_restart
+    mode: restart
+    then:
+      - delay: 15s
+      - switch.turn_on: restart_switch
+
+  - id: screen_light
+    mode: restart
+    then:
+      - lvgl.resume:
+      - light.turn_on:
+          id: backlight
+          brightness: 100%          
+          transition_length: 1s
+      - delay: 30s
+      - light.turn_on:
+            id: backlight
+            brightness: 50%
+            transition_length: 2s
+      - delay: 2min
+      - lvgl.page.show: clock_page
+      - light.turn_on:
+            id: backlight
+            brightness: 35%
+            transition_length: 5s
+      - delay: 1min
+      - light.turn_off:
+            id: backlight
+      - lvgl.pause:
+          show_snow: true
+
+interval:
+  - interval: 5s
+    then:
+      - if:
+          condition:
+            lambda: |-
+              return lv_obj_get_screen(id(cam_background)) == lv_scr_act();
+          then:
+            - logger.log:
+                level: DEBUG
+                format: "[CAM] visible; requesting new frame ts=%u"
+                args: [ '((uint32_t) id(uptime_internal).state)' ]
+            - component.update: cam_bg
+  
+  - interval: 5min
+    then:
+      - if:
+          condition:
+            lambda: |-
+              return lv_obj_get_screen(id(cam_background)) != lv_scr_act();
+          then:
+            - logger.log:
+                level: DEBUG
+                format: "[CAM] hidden; periodic refresh ts=%u"
+                args: [ '((uint32_t) id(uptime_internal).state)' ]
+            - component.update: cam_bg
+
+#-------------------------------------------
+# Display st7701s spi
+#-------------------------------------------
+spi:
+  - id: lcd_spi
+    clk_pin: GPIO48
+    mosi_pin: GPIO47
+    
+display:
+  - platform: st7701s
+    id: my_display
+    update_interval: never
+    auto_clear_enabled: false
+    data_rate: 2MHz
+    spi_mode: MODE3
+    color_order: RGB
+    invert_colors: false
+    dimensions:
+      width: 480
+      height: 480
+    transform:
+      mirror_x: false
+      mirror_y: false
+    cs_pin: 39
+    de_pin: 18
+    hsync_pin: 16
+    vsync_pin: 17
+    pclk_pin: 21
+    init_sequence: 
+      - 1
+      - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x10]
+      - [0xCD, 0x00]
+    pclk_frequency: 12MHz
+    pclk_inverted: false
+    data_pins:
+      red:
+        - 11
+        - 12
+        - 13
+        - 14
+        - 0
+      green:
+        - 8
+        - 20
+        - 3
+        - 46
+        - 9
+        - 10 
+      blue:
+        - 4
+        - 5
+        - 6
+        - 7
+        - 15
